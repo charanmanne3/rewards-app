@@ -31,6 +31,7 @@ def _run_expiration_job() -> None:
         if count:
             logger.info("Scheduled job deactivated %s reward(s)", count)
     except Exception:
+        db.rollback()
         logger.exception("Expiration cleanup job failed")
     finally:
         db.close()
@@ -51,6 +52,7 @@ def _run_offer_refresh_job() -> None:
         if settings.cache_warm_job_enabled:
             warm_provider_cache(db)
     except Exception:
+        db.rollback()
         logger.exception("Offer refresh job failed")
     finally:
         db.close()

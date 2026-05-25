@@ -79,6 +79,7 @@ def _health_payload(include_details: bool = True) -> dict:
     providers: list[dict] = []
 
     if include_details:
+        db = None
         try:
             db = SessionLocal()
             db.execute(text("SELECT 1"))
@@ -97,18 +98,29 @@ def _health_payload(include_details: bool = True) -> dict:
                         }
                     )
             except Exception:
-                logger.debug("Provider metadata skipped in health check", exc_info=True)
-            db.close()
+                db.rollback()
+                logger.exception("Provider metadata failed in health check")
         except Exception:
-            logger.debug("Database health check failed", exc_info=True)
+            if db is not None:
+                db.rollback()
+            logger.exception("Database health check failed")
+        finally:
+            if db is not None:
+                db.close()
     else:
+        db = None
         try:
             db = SessionLocal()
             db.execute(text("SELECT 1"))
             db_ok = True
-            db.close()
         except Exception:
+            if db is not None:
+                db.rollback()
+            logger.exception("Database readiness check failed")
             db_ok = False
+        finally:
+            if db is not None:
+                db.close()
 
     return {
         "status": "ok" if db_ok else "degraded",
@@ -163,14 +175,26 @@ def create_app() -> FastAPI:
             logger.info("%s %s", request.method, path)
         try:
             response = await call_next(request)
-            if path == "/recommendations":
+            if response.status_code >= 500:
+                logger.error(
+                    "Response %s for %s %s",
+                    response.status_code,
+                    request.method,
+                    path,
+                )
+            elif path == "/recommendations":
                 logger.info(
                     "POST /recommendations status=%s",
                     response.status_code,
                 )
             return response
-        except Exception:
-            logger.exception("Request failed: %s %s", request.method, path)
+        except Exception as exc:
+            logger.exception(
+                "Request failed: %s %s [%s]",
+                request.method,
+                path,
+                type(exc).__name__,
+            )
             raise
 
     @app.get("/health", tags=["health"])
