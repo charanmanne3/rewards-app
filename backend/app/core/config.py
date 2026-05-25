@@ -12,10 +12,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def normalize_database_url(url: str) -> str:
-    """Supabase/Heroku sometimes use postgres:// — SQLAlchemy needs postgresql://."""
+    """
+    Normalize DATABASE_URL for SQLAlchemy + Supabase/Render.
+
+    - postgres:// → postgresql://
+    - append sslmode=require when connecting to remote hosts (Supabase)
+    """
     u = url.strip()
     if u.startswith("postgres://"):
         u = "postgresql://" + u[len("postgres://") :]
+
+    host = u.lower()
+    is_local = "localhost" in host or "127.0.0.1" in host
+    if not is_local and "sslmode=" not in host:
+        sep = "&" if "?" in u else "?"
+        u = f"{u}{sep}sslmode=require"
+
     return u
 
 
