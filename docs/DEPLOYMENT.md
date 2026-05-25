@@ -23,7 +23,7 @@ Deploy the Rewards Optimizer stack so the API and database run 24/7 without your
 1. Create PostgreSQL (Supabase or Render) and copy `DATABASE_URL`.
 2. Deploy API from `backend/` using **Python 3** on Render (see [RENDER.md](RENDER.md)).
 3. Set environment variables (see `backend/.env.production.example`).
-4. Render Shell: `alembic upgrade head` then `python -m scripts.seed`.
+4. Migrations and seed run automatically on API startup (empty DB only).
 5. Verify: `GET https://your-api.onrender.com/health` → `"status":"ok"`.
 
 ### Frontend
@@ -81,7 +81,7 @@ Configure Render health check path to `/health/ready`.
 
 ## Operations
 
-- **Migrations**: run `alembic upgrade head` in Render Shell after schema changes.
+- **Migrations**: applied automatically on each deploy startup (`alembic upgrade head`).
 - **Logs**: JSON to stdout on Render (set `LOG_FORMAT=json`).
 - **Cron**: schedule `python -m scripts.run_expiration_cleanup` daily (Render Cron or GitHub Actions).
 - **Scaling**: increase `WEB_CONCURRENCY` on Render paid plans (use a process manager or multiple workers in start command if needed).

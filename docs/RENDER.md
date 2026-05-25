@@ -64,12 +64,7 @@ OFFER_REFRESH_JOB_ENABLED=true
 
 ## 4. First deploy
 
-Run migrations and seed once in Render **Shell**:
-
-```bash
-alembic upgrade head
-python -m scripts.seed
-```
+On startup the API automatically runs `alembic upgrade head` and seeds data when tables are empty. No Render Shell required.
 
 After deploy succeeds:
 

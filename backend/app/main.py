@@ -5,7 +5,8 @@ Local:
   uvicorn app.main:app --reload --port 8000
 
 Production (Render):
-  ./scripts/start.sh
+  uvicorn app.main:app --host 0.0.0.0 --port 10000
+  (migrations + seed run automatically on startup)
 """
 
 import logging
@@ -22,6 +23,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.crud import provider as provider_crud
+from app.db.bootstrap import bootstrap_database
 from app.db.session import SessionLocal
 from app.jobs.scheduler import start_scheduler, stop_scheduler
 
@@ -40,6 +42,14 @@ async def lifespan(app: FastAPI):
         API_VERSION,
     )
     logger.info("Database host: %s", _safe_db_host(settings.database_url))
+
+    try:
+        bootstrap_database()
+    except Exception:
+        logger.exception("Database bootstrap failed (migrations or seed)")
+        if settings.is_production:
+            raise
+
     try:
         db = SessionLocal()
         db.execute(text("SELECT 1"))
