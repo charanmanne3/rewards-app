@@ -7,12 +7,12 @@ Deploy the Rewards Optimizer stack so the API and database run 24/7 without your
 | Component | Recommended host | Notes |
 |-----------|------------------|--------|
 | PostgreSQL | [Supabase](SUPABASE.md) or Render Postgres | SSL required in production |
-| FastAPI API | [Render](RENDER.md) (Docker) | Migrations run on startup |
+| FastAPI API | [Render](RENDER.md) (native Python 3.11.9) | Run migrations once via Render Shell |
 | Mobile app | Expo EAS Build | `EXPO_PUBLIC_API_URL` points to cloud API |
 
 ## Prerequisites
 
-- GitHub repository connected to Render (or another Docker host)
+- GitHub repository connected to Render
 - Supabase project **or** Render managed PostgreSQL
 - Expo account for production mobile builds (optional)
 
@@ -21,10 +21,10 @@ Deploy the Rewards Optimizer stack so the API and database run 24/7 without your
 ### Backend
 
 1. Create PostgreSQL (Supabase or Render) and copy `DATABASE_URL`.
-2. Deploy API from `backend/` using Docker (see [RENDER.md](RENDER.md)).
+2. Deploy API from `backend/` using **Python 3** on Render (see [RENDER.md](RENDER.md)).
 3. Set environment variables (see `backend/.env.production.example`).
-4. Verify: `GET https://your-api.onrender.com/health` → `"status":"ok"`.
-5. Seed once (Render shell): `python -m scripts.seed`.
+4. Render Shell: `alembic upgrade head` then `python -m scripts.seed`.
+5. Verify: `GET https://your-api.onrender.com/health` → `"status":"ok"`.
 
 ### Frontend
 
@@ -45,6 +45,7 @@ Deploy the Rewards Optimizer stack so the API and database run 24/7 without your
 | `ADMIN_API_KEY` | `openssl rand -hex 32` |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `ALLOWED_HOSTS` | e.g. `your-api.onrender.com` |
+| `PYTHON_VERSION` | `3.11.9` (Render dashboard, optional but recommended) |
 
 ### Frontend
 
@@ -75,27 +76,20 @@ Configure Render health check path to `/health/ready`.
 | | Local | Cloud |
 |---|--------|--------|
 | API | `127.0.0.1:8000` | `https://*.onrender.com` |
-| DB | Docker Postgres | Supabase / RDS |
+| DB | Local Postgres or Supabase | Supabase / RDS / Render Postgres |
 | Frontend `.env` | `EXPO_PUBLIC_API_URL=http://127.0.0.1:8000` | HTTPS cloud URL |
 
 ## Operations
 
-- **Migrations**: run automatically via `scripts/start.sh` on each deploy.
+- **Migrations**: run `alembic upgrade head` in Render Shell after schema changes.
 - **Logs**: JSON to stdout on Render (set `LOG_FORMAT=json`).
 - **Cron**: schedule `python -m scripts.run_expiration_cleanup` daily (Render Cron or GitHub Actions).
-- **Scaling**: increase `WEB_CONCURRENCY` on Render paid plans.
+- **Scaling**: increase `WEB_CONCURRENCY` on Render paid plans (use a process manager or multiple workers in start command if needed).
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| App can't reach API | Set `EXPO_PUBLIC_API_URL`; add device origin to `CORS_ORIGINS` if using Expo web |
-| 503 on `/health/ready` | Check `DATABASE_URL`, SSL mode, Supabase IP allowlist |
-| Startup crash | Check Render logs for missing `SECRET_KEY` / `ADMIN_API_KEY` |
-| Empty recommendations | Run `python -m scripts.seed` on production DB once |
-
-## Related docs
-
-- [RENDER.md](RENDER.md) — Render web service setup
-- [SUPABASE.md](SUPABASE.md) — Supabase PostgreSQL setup
-- [ARCHITECTURE.md](ARCHITECTURE.md) — application architecture
+| Build shows Python 3.14 | Use Runtime **Python 3**, Root Directory `backend`, `runtime.txt` = `python-3.11.9`, clear build cache |
+| Rust / maturin errors | Pin Python 3.11.9; dependencies use prebuilt wheels only |
+| 503 on `/health/ready` | Check `DATABASE_URL` and SSL params |

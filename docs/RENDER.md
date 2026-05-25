@@ -1,6 +1,20 @@
-# Render deployment
+# Render deployment (native Python only)
 
-Host the FastAPI backend on [Render](https://render.com) with Docker, managed Postgres, and automatic HTTPS.
+Host the FastAPI backend on [Render](https://render.com) with **Python 3** (not Docker), managed Postgres, and automatic HTTPS.
+
+## Required Render settings
+
+| Setting | Value |
+|---------|--------|
+| **Runtime** | Python 3 |
+| **Root Directory** | `backend` |
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `uvicorn app.main:app --host 0.0.0.0 --port 10000` |
+| **Health check path** | `/health/ready` |
+
+`backend/runtime.txt` must contain `python-3.11.9`. In Environment, set `PYTHON_VERSION` = `3.11.9` if the dashboard offers it.
+
+After changing runtime or Python version: **Clear build cache** → **Manual Deploy**.
 
 ## 1. Create PostgreSQL (optional)
 
@@ -12,28 +26,14 @@ For Supabase instead, see [SUPABASE.md](SUPABASE.md) and skip Render Postgres.
 
 ## 2. Deploy the web service
 
-### Option A — Blueprint
-
-1. Push repo to GitHub.
-2. Render → **New** → **Blueprint**.
-3. Point to `backend/render.yaml` (adjust `ALLOWED_HOSTS` and `CORS_ORIGINS` after deploy).
-
-### Option B — Native Python (recommended — uses repo-root `runtime.txt`)
-
-1. **New** → **Web Service** → connect repository.
+1. **New** → **Web Service** → connect GitHub repo.
 2. **Root directory**: `backend`
-3. **Runtime**: Python 3 (not Docker)
+3. **Runtime**: **Python 3** (do not use Docker)
 4. **Build command**: `pip install -r requirements.txt`
-5. **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port 10000`
 6. **Health check path**: `/health/ready`
-7. Confirm **`runtime.txt`** exists at **repository root** (not in `backend/`) with `python-3.11.9`
-8. In Environment, set `PYTHON_VERSION` = `3.11.9` if the dashboard offers it
 
-### Option C — Docker (alternative)
-
-1. **Root directory**: `backend`
-2. **Runtime**: Docker — `Dockerfile` uses `python:3.11.9-slim-bookworm` (`runtime.txt` is ignored)
-3. **Health check path**: `/health/ready`
+Confirm build logs show **Python 3.11.9**, not 3.14.
 
 ## 3. Environment variables
 
@@ -44,6 +44,7 @@ APP_ENV=production
 DEBUG=false
 LOG_LEVEL=INFO
 LOG_FORMAT=json
+PYTHON_VERSION=3.11.9
 DATABASE_URL=<from Supabase or Render Postgres>
 SECRET_KEY=<openssl rand -hex 32>
 ADMIN_API_KEY=<openssl rand -hex 32>
@@ -51,7 +52,7 @@ CORS_ORIGINS=https://your-domain.com
 ALLOWED_HOSTS=your-service-name.onrender.com
 ```
 
-Render injects `PORT` automatically — do not hardcode.
+Render injects `PORT` (usually `10000`). The start command above binds to port `10000`.
 
 Optional:
 
@@ -63,21 +64,17 @@ OFFER_REFRESH_JOB_ENABLED=true
 
 ## 4. First deploy
 
-The Docker `CMD` runs:
+Run migrations and seed once in Render **Shell**:
 
 ```bash
 alembic upgrade head
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+python -m scripts.seed
 ```
 
 After deploy succeeds:
 
 1. Open `https://<your-service>.onrender.com/health`
-2. Render **Shell**:
-
-```bash
-python -m scripts.seed
-```
+2. Verify recommendations: see [Verify](#verify) below.
 
 ## 5. Connect the mobile app
 
@@ -105,7 +102,8 @@ Production App Store builds typically use the HTTPS API only; strict CORS list i
 Render **Cron Job**:
 
 - Schedule: `0 3 * * *` (daily 3 AM UTC)
-- Command: `cd backend && python -m scripts.run_expiration_cleanup`
+- Root directory: `backend`
+- Command: `python -m scripts.run_expiration_cleanup`
 - Same `DATABASE_URL` as web service
 
 ## 8. Free tier notes
@@ -122,3 +120,11 @@ curl -X POST https://YOUR_SERVICE.onrender.com/recommendations \
   -H "Content-Type: application/json" \
   -d '{"store":"Walmart","owned_cards":[],"categories":[]}'
 ```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Build uses Python 3.14 | Runtime must be **Python 3**, not Docker. Set `backend/runtime.txt` to `python-3.11.9`, `PYTHON_VERSION=3.11.9`, clear build cache, redeploy. |
+| `maturin` / `cargo` / Rust errors | Wrong Python version — wheels exist for 3.11.9 only. |
+| Service still Docker | Dashboard → Settings → change Runtime to Python 3, remove Dockerfile path. |

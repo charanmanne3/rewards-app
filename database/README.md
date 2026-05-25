@@ -1,6 +1,6 @@
 # Database
 
-PostgreSQL on **AWS RDS** in production; Docker Postgres locally.
+PostgreSQL on **AWS RDS** in production; local Postgres or Supabase for development.
 
 ## Schema (v2)
 

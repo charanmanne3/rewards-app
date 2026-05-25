@@ -6,7 +6,7 @@ Production-ready **database-driven** fintech rewards platform: pick a store, get
 |-------|--------|
 | Mobile | React Native, Expo, TypeScript |
 | API | FastAPI, SQLAlchemy, Alembic |
-| DB | PostgreSQL (Docker / AWS RDS) |
+| DB | PostgreSQL (Supabase / AWS RDS / local) |
 | Hosting | Render (API) + optional Lambda (jobs) |
 
 ## What’s new in v2
@@ -29,14 +29,15 @@ Full architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ```bash
 cd backend
 cp .env.example .env
-docker compose up -d db
-docker compose run --rm api pip install -r requirements.txt
-docker compose run --rm api alembic upgrade head
-docker compose run --rm api python -m scripts.seed
-docker compose up api
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+python -m scripts.seed
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API: http://localhost:8000/docs
+API: http://localhost:8000/docs  
+Use a local or cloud `DATABASE_URL` in `.env` (see [docs/SUPABASE.md](docs/SUPABASE.md)).
 
 ### 2. Mobile app
 
@@ -97,10 +98,10 @@ curl -X POST http://localhost:8000/admin/rewards \
 | Guide | Purpose |
 |-------|---------|
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Full checklist |
-| [docs/RENDER.md](docs/RENDER.md) | Host API on Render (Docker) |
+| [docs/RENDER.md](docs/RENDER.md) | Host API on Render (native Python 3.11.9) |
 | [docs/SUPABASE.md](docs/SUPABASE.md) | Managed PostgreSQL |
 
-**Backend** (`backend/`): Docker + `scripts/start.sh` runs migrations then uvicorn.  
+**Backend** (`backend/`): Render uses native Python 3.11.9 (`runtime.txt`); run migrations via Render Shell.  
 **Health**: `GET /health`, `/health/live`, `/health/ready`  
 **Frontend**: set `EXPO_PUBLIC_API_URL=https://your-api.onrender.com` in EAS / `.env`
 

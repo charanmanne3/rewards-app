@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Production entrypoint — migrations then uvicorn (Render, Docker, RDS).
+# Local/manual entrypoint — migrations then uvicorn (not used by Render native start command).
 set -eu
 
 PORT="${PORT:-10000}"
