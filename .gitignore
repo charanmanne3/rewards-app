@@ -1,0 +1,35 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# OS / IDE
+.DS_Store
+.idea
+.vscode
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__
+*.py[cod]
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Build artifacts
+*.egg-info
+.Python
