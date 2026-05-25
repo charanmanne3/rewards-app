@@ -28,7 +28,13 @@ engine = create_engine(
 
 register_engine_logging(engine)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    # Keep loaded attributes readable after the request session closes (FastAPI serializes responses afterward).
+    expire_on_commit=False,
+)
 
 
 def get_db() -> Generator[Session, None, None]:

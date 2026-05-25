@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.crud import credit_card as card_crud
 from app.crud import reward as reward_crud
-from app.models.enums import RewardType
+from app.db.cards_query import fetch_cards_read
 from app.schemas.catalog import CardRewardSummary, CreditCardDetailRead
 from app.schemas.credit_card import CreditCardRead
 from app.schemas.store_cards import StoreCardsResponse
@@ -20,37 +20,45 @@ router = APIRouter(prefix="/cards", tags=["cards"])
 @router.get("", response_model=list[CreditCardRead])
 def list_cards(db: Session = Depends(get_db)) -> list[CreditCardRead]:
     """Return all credit cards."""
-    return card_crud.get_cards(db)
+    return fetch_cards_read(db)
 
 
 @router.get("/details", response_model=list[CreditCardDetailRead])
 def list_cards_with_rewards(db: Session = Depends(get_db)) -> list[CreditCardDetailRead]:
     """All credit cards with their active, eligible reward mappings."""
-    cards = card_crud.get_cards(db)
-    eligible = reward_crud.get_eligible_rewards(db)
+    try:
+        cards = card_crud.get_cards(db)
+        eligible = reward_crud.get_eligible_rewards(db)
 
-    by_card: dict[int, list[CardRewardSummary]] = {}
-    for r in eligible:
-        if not r.store or not r.card:
-            continue
-        by_card.setdefault(r.card_id, []).append(
-            CardRewardSummary(
-                store_name=r.store.name,
-                store_category=r.store.category,
-                cashback_percent=r.cashback_percent,
-                reward_type=r.reward_type,
+        by_card: dict[int, list[CardRewardSummary]] = {}
+        for r in eligible:
+            if not r.store or not r.card:
+                continue
+            by_card.setdefault(r.card_id, []).append(
+                CardRewardSummary(
+                    store_name=r.store.name,
+                    store_category=r.store.category,
+                    cashback_percent=r.cashback_percent,
+                    reward_type=r.reward_type,
+                )
             )
-        )
 
-    return [
-        CreditCardDetailRead(
-            id=c.id,
-            card_name=c.card_name,
-            issuer=c.issuer,
-            rewards=sorted(by_card.get(c.id, []), key=lambda x: x.cashback_percent, reverse=True),
-        )
-        for c in cards
-    ]
+        return [
+            CreditCardDetailRead(
+                id=c.id,
+                card_name=c.card_name,
+                issuer=c.issuer,
+                rewards=sorted(
+                    by_card.get(c.id, []),
+                    key=lambda x: x.cashback_percent,
+                    reverse=True,
+                ),
+            )
+            for c in cards
+        ]
+    except Exception:
+        logger.exception("GET /cards/details failed")
+        raise
 
 
 @router.get("/{store_name}", response_model=StoreCardsResponse)
