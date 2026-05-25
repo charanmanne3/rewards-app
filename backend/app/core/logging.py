@@ -14,6 +14,14 @@ from datetime import datetime, timezone
 from app.core.config import get_settings
 
 
+class FlushingStreamHandler(logging.StreamHandler):
+    """Emit log records and flush stdout immediately (Render production)."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        super().emit(record)
+        self.flush()
+
+
 class JsonFormatter(logging.Formatter):
     """JSON logs for Render; includes full traceback on errors."""
 
@@ -42,7 +50,7 @@ def setup_logging() -> None:
     root.handlers.clear()
     root.setLevel(level)
 
-    handler = logging.StreamHandler(sys.stdout)
+    handler = FlushingStreamHandler(sys.stdout)
     if settings.log_format.lower() == "json" or settings.is_production:
         handler.setFormatter(JsonFormatter())
     else:
