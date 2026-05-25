@@ -2,7 +2,7 @@
 # Production entrypoint — migrations then uvicorn (Render, Docker, RDS).
 set -eu
 
-PORT="${PORT:-8000}"
+PORT="${PORT:-10000}"
 WORKERS="${WEB_CONCURRENCY:-1}"
 
 echo "Running database migrations..."

@@ -18,14 +18,22 @@ For Supabase instead, see [SUPABASE.md](SUPABASE.md) and skip Render Postgres.
 2. Render → **New** → **Blueprint**.
 3. Point to `backend/render.yaml` (adjust `ALLOWED_HOSTS` and `CORS_ORIGINS` after deploy).
 
-### Option B — Manual Docker service
+### Option B — Native Python (recommended — uses repo-root `runtime.txt`)
 
 1. **New** → **Web Service** → connect repository.
 2. **Root directory**: `backend`
-3. **Runtime**: Docker
-4. **Dockerfile path**: `./Dockerfile`
-5. **Health check path**: `/health/ready`
-6. **Instance type**: Starter or higher for always-on
+3. **Runtime**: Python 3 (not Docker)
+4. **Build command**: `pip install -r requirements.txt`
+5. **Start command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+6. **Health check path**: `/health/ready`
+7. Confirm **`runtime.txt`** exists at **repository root** (not in `backend/`) with `python-3.11.9`
+8. In Environment, set `PYTHON_VERSION` = `3.11.9` if the dashboard offers it
+
+### Option C — Docker (alternative)
+
+1. **Root directory**: `backend`
+2. **Runtime**: Docker — `Dockerfile` uses `python:3.11.9-slim-bookworm` (`runtime.txt` is ignored)
+3. **Health check path**: `/health/ready`
 
 ## 3. Environment variables
 
