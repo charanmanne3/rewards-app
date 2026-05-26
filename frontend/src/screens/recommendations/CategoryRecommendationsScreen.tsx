@@ -15,6 +15,7 @@ import { Icons } from "@/components/ui/AppIcon";
 import type { CategoryRecommendItem } from "@/types/models";
 import { fetchCategoryRecommendations } from "@/services/recommendations/categoryRecommendationsService";
 import { colors, radius, spacing, typography } from "@/theme";
+import { navigateToCardDetails } from "@/navigation/recommendationNavigation";
 
 const CATEGORY_OPTIONS: CategoryOption[] = [
   { label: "Dining", value: "dining" },
@@ -136,16 +137,8 @@ export function CategoryRecommendationsScreen() {
                     key={`${it.card_name}-${it.reward_category}`}
                     item={it}
                     onPress={() => {
-                      // Pass the selected recommendation fields to the details screen.
-                      router.push({
-                        pathname: "/card-details/[cardName]",
-                        params: {
-                          cardName: encodeURIComponent(it.card_name),
-                          rewardCategory: it.reward_category,
-                          rewardRate: it.reward_rate,
-                          annualFee: it.annual_fee === null ? "null" : String(it.annual_fee),
-                        },
-                      });
+                      // Navigate with fully-typed data (via helper) so the details screen is stateless.
+                      navigateToCardDetails(router, it);
                     }}
                   />
                 ))}
