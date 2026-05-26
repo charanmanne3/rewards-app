@@ -130,6 +130,14 @@ export interface RecommendationRequest {
   categories?: string[];
 }
 
+/** GET /recommend?category=... */
+export interface CategoryRecommendItem {
+  card_name: string;
+  reward_category: string;
+  reward_rate: string;
+  annual_fee: number | null;
+}
+
 export interface ApiHealthResponse {
   status: "ok" | "degraded";
   version: string;
