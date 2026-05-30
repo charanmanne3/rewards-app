@@ -11,10 +11,7 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="stores"
-          options={{ headerShown: false, presentation: "modal", animation: "slide_from_bottom" }}
-        />
+        
       </Stack>
     </AppProviders>
   );
