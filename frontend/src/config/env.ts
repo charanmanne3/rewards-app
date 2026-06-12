@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 
 export type AppEnvironment = "development" | "staging" | "production";
 
-const DEV_FALLBACK_API = "http://127.0.0.1:8000";
+const DEV_FALLBACK_API = "https://rewards-app-u7pb.onrender.com";
 
 function normalizeApiUrl(url: string): string {
   return url
